@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        #c {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+
+<body>
+<canvas id="c" width="800" height="600"></canvas>
+</body>
+
+</html>
+<script src="js/index.js"></script>
+<script>
+    // 1.准备画布
+    var canvas = document.querySelector('#c');
+    // 2.生成画图工具(请画家)
+    var context = canvas.getContext("2d");
+
+    //  加载所有的图片
+    var skyImage = new Image();
+    var landImage = new Image();
+    var pipe1Image = new Image();
+    var pipe2Image = new Image();
+    var birdsImage = new Image();
+
+    //  获取每张图片的路径
+    skyImage.src = "img/sky.png";
+    landImage.src = "img/land.png";
+    pipe1Image.src = "img/pipe1.png";
+    pipe2Image.src = "img/pipe2.png";
+    birdsImage.src = "img/birds.png";
+
+    //  将所有图片放进一个数组中
+    var imagesArr = [skyImage,landImage,pipe1Image,pipe2Image,birdsImage];
+    //  计数器
+    var count = 0;
+
+    //  遍历数组中的所有图片
+    imagesArr.forEach(function(image){
+        //  图片加载
+        image.onload = function(){
+            count += 1;// 记录加载的图片张数
+            //  如果计数器 与 数组的长度一致,说明全部加载完毕
+            if(count == imagesArr.length){
+                //  创建一个新数组,用来存放角色
+                var roleArrs = [];
+
+                //  准备所有角色
+                function creatRoles(){
+                    //  1.创建所有的天空背景对象
+                    for(var i = 0; i < 2; i++){
+                        //  天空对象的参数
+                        var info = {
+                            image:skyImage,
+                            x: i * skyImage.width,
+                            context:context,
+                            canvas: canvas
+                        };
+                        //  创建天空对象
+                        var sky = new Sky(info);
+                        //  将天空对象放到角色数组中
+                        roleArrs.push(sky);
+                    }
+
+                    //  2.创建所有的陆地背景对象
+                    for(var i = 0; i < 4; i++){
+                        var info = {
+                            image:landImage,
+                            x: i * landImage.width,
+                            canvas:canvas,
+                            context:context
+                        };
+
+                        //  创建陆地对象
+                        var land = new Land(info);
+                        //  归队
+                        roleArrs.push(land);
+                    }
+
+                    //  3.创建所有的管道背景对象
+                    //  管道与管道之间的间距
+                    var gap = (canvas.width - pipe2Image.width * 6)/5;
+                    for(var i = 0; i < 6; i++){
+                        var info = {
+                            x:300 + i * (pipe2Image.width + gap),
+                            gap:gap,
+                            topImage:pipe2Image,
+                            bottomImage:pipe1Image,
+                            context:context,
+                            canvas:canvas,
+                            //  下方管道
+                            bottomOffset:landImage.height
+                        }
+                        var pipe = new Pipe2(info);
+                        roleArrs.push(pipe);
+                    }
+
+                    //  4.创建小鸟对象
+                    var info = {
+                        image:birdsImage,
+                        x:100,
+                        y:100,
+                        canvas:canvas,
+                        context:context
+                    };
+                    var bird = new Bird(info);
+                    roleArrs.push(bird);
+                }
+                //  调用创建所有角色的函数
+                creatRoles();
+
+                //  点击屏幕,让小鸟往上蹦
+                canvas.addEventListener("click",function () {
+                    roleArrs[roleArrs.length - 1].speed = - 0.15;
+                });
+
+                //  将创建好多角色绘制到画布上
+                function action(){
+                    //  1.清空画布
+                    context.clearRect(0,0,canvas.width,canvas.height);
+                    //  创建玻璃纸
+                    context.beginPath();
+
+                    //  2.遍历角色数组,让各个角色找位置,自己完成绘制
+                    roleArrs.forEach(function(role){
+                        role.draw();
+                    });
+
+                    //  计时系统
+                    var now = new Date();
+                    var deltaTime = now - startTime;
+                    var s = Math.floor(deltaTime / 1000);
+                    var h = Math.floor(s / 3600);
+                    var m = Math.floor(s / 60);
+                    s = s % 60;
+
+                    var text = "您坚持了:"+h+"小时"+m+"分"+s+"秒";
+                    context.textAlign = "right";
+                    context.fillStyle = "hotpink";
+                    context.textBaseline = "top";
+                    context.font = "30px 楷体";
+                    context.fillText(text,canvas.width,0);
+
+
+
+                    //  3.小鸟死亡事件处理
+                    //  掉地上
+                    var bird = roleArrs[roleArrs.length -1];
+                    if(bird.y >= canvas.height - landImage.height - bird.h){
+//                        alert("GAME OVER");
+                        return;
+                    }
+                    //  撞柱子上
+                    //  在画布上把柱子的路径画出来,但是不做stroke或者fill操作
+                    if(context.isPointInPath(bird.x + bird.w/2,bird.y + bird.h/2)){
+//                        alert("GAME OVER");
+                        return;
+                    }
+
+                    //  开始执行动画
+                    window.requestAnimationFrame(action);
+                }
+                //  开始计算时间
+                var startTime = new Date();
+
+                //  调用绘制函数
+                action();
+            }
+        }
+    });
+
+
+
+
+</script>
